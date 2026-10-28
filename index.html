@@ -1,0 +1,271 @@
+
+<!DOCTYPE html>
+<html lang="uz">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Trading Analyzer</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #0b1120;
+      color: #f1f5f9;
+    }
+
+    header {
+      padding: 22px;
+      text-align: center;
+      border-bottom: 1px solid #263247;
+    }
+
+    header h1 {
+      margin: 0;
+      color: #38bdf8;
+    }
+
+    header p {
+      color: #94a3b8;
+    }
+
+    main {
+      max-width: 850px;
+      margin: 35px auto;
+      padding: 20px;
+    }
+
+    .panel {
+      background: #111c30;
+      padding: 24px;
+      border: 1px solid #263247;
+      border-radius: 16px;
+      margin-bottom: 20px;
+    }
+
+    .upload {
+      border: 2px dashed #38bdf8;
+      border-radius: 12px;
+      padding: 35px 15px;
+      text-align: center;
+      cursor: pointer;
+    }
+
+    .upload:hover {
+      background: #172841;
+    }
+
+    input, select, button {
+      font: inherit;
+    }
+
+    input[type="file"] {
+      display: none;
+    }
+
+    select {
+      width: 100%;
+      padding: 12px;
+      margin-top: 10px;
+      color: white;
+      background: #0b1120;
+      border: 1px solid #334155;
+      border-radius: 8px;
+    }
+
+    #preview {
+      display: none;
+      width: 100%;
+      max-height: 500px;
+      object-fit: contain;
+      margin-top: 20px;
+      border-radius: 10px;
+      background: #080d18;
+    }
+
+    button {
+      width: 100%;
+      padding: 14px;
+      margin-top: 18px;
+      border: 0;
+      border-radius: 9px;
+      background: #0284c7;
+      color: white;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background: #0369a1;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    #result {
+      display: none;
+      line-height: 1.8;
+      white-space: pre-wrap;
+    }
+
+    .note {
+      font-size: 13px;
+      color: #94a3b8;
+    }
+
+    footer {
+      text-align: center;
+      padding: 20px;
+      color: #64748b;
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <h1>AI Trading Analyzer</h1>
+    <p>Trading grafiklarini sun'iy intellekt yordamida tahlil qilish</p>
+  </header>
+
+  <main>
+    <section class="panel">
+      <h2>Grafik skrinshotini yuklang</h2>
+
+      <label class="upload" for="imageInput">
+        <div style="font-size: 42px;">📈</div>
+        <h3>Rasm tanlash uchun bosing</h3>
+        <p class="note">PNG, JPG yoki WEBP formatlari</p>
+      </label>
+
+      <input
+        type="file"
+        id="imageInput"
+        accept="image/png,image/jpeg,image/webp"
+      >
+
+      <img id="preview" alt="Trading grafik skrinshoti">
+
+      <label for="timeframe">Grafik vaqti</label>
+      <select id="timeframe">
+        <option value="1m">1 daqiqa</option>
+        <option value="5m" selected>5 daqiqa</option>
+        <option value="15m">15 daqiqa</option>
+        <option value="1h">1 soat</option>
+        <option value="4h">4 soat</option>
+      </select>
+
+      <label for="asset">Savdo bozori</label>
+      <select id="asset">
+        <option value="BTCUSDT">BTC / USDT</option>
+        <option value="ETHUSDT">ETH / USDT</option>
+        <option value="OTHER">Boshqa aktiv</option>
+      </select>
+
+      <button id="analyzeBtn" disabled>
+        AI bilan tahlil qilish
+      </button>
+
+      <p class="note">
+        AI tahlili uchun Python backend ishga tushgan va OpenAI API kaliti sozlangan bo‘lishi kerak.
+      </p>
+    </section>
+
+    <section class="panel" id="result">
+      <h2>Tahlil natijasi</h2>
+      <div id="resultText"></div>
+    </section>
+  </main>
+
+  <footer>
+    AI Trading Analyzer · Tahlil natijalari kafolatlangan signal emas.
+  </footer>
+
+  <script>
+    const imageInput = document.getElementById("imageInput");
+    const preview = document.getElementById("preview");
+    const analyzeBtn = document.getElementById("analyzeBtn");
+
+    let selectedFile = null;
+
+    imageInput.addEventListener("change", function () {
+      const file = this.files[0];
+
+      if (!file) return;
+
+      const allowedTypes = [
+        "image/png",
+        "image/jpeg",
+        "image/webp"
+      ];
+
+      if (!allowedTypes.includes(file.type)) {
+        alert("PNG, JPG yoki WEBP rasm tanlang.");
+        this.value = "";
+        return;
+      }
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Rasm hajmi 10 MB dan oshmasin.");
+        this.value = "";
+        return;
+      }
+
+      selectedFile = file;
+
+      const reader = new FileReader();
+
+      reader.onload = function (event) {
+        preview.src = event.target.result;
+        preview.style.display = "block";
+        analyzeBtn.disabled = false;
+      };
+
+      reader.readAsDataURL(file);
+    });
+
+    const result = document.getElementById("result");
+    const resultText = document.getElementById("resultText");
+
+    analyzeBtn.addEventListener("click", async function () {
+      if (!selectedFile) {
+        alert("Avval grafik rasmini yuklang.");
+        return;
+      }
+
+      const formData = new FormData();
+      formData.append("image", selectedFile);
+      formData.append("timeframe", document.getElementById("timeframe").value);
+      formData.append("asset", document.getElementById("asset").value);
+
+      analyzeBtn.disabled = true;
+      analyzeBtn.textContent = "AI tahlil qilmoqda...";
+      result.style.display = "block";
+      resultText.textContent = "Grafik tahlil qilinmoqda...";
+
+      try {
+        const response = await fetch("http://127.0.0.1:8000/analyze", {
+          method: "POST",
+          body: formData
+        });
+        const data = await response.json();
+        if (!response.ok) {
+          throw new Error(data.detail || "Tahlil bajarilmadi.");
+        }
+        resultText.textContent = JSON.stringify(data.analysis, null, 2);
+      } catch (error) {
+        resultText.textContent = "Xatolik: " + error.message +
+          "\nBackend ishlayotganini, internetni va API kalitini tekshiring.";
+      } finally {
+        analyzeBtn.disabled = false;
+        analyzeBtn.textContent = "AI bilan tahlil qilish";
+      }
+    });
+  </script>
+</body>
+</html>
